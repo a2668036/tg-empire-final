@@ -1,0 +1,39 @@
+{
+  "name": "tg-empire-backend",
+  "version": "1.0.0",
+  "description": "电报社区帝国后端服务",
+  "main": "src/server.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "mocha tests/**/*.test.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "community"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "redis": "^5.5.6",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "chai": "^5.0.0",
+    "eslint": "^9.30.1",
+    "mocha": "^10.8.2",
+    "nodemon": "^3.1.10",
+    "sinon": "^16.0.0",
+    "supertest": "^7.1.2"
+  }
+}
