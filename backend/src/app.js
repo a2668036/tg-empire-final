@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { Telegraf } = require('telegraf');
 const botHandler = require('./services/botHandler');
 const userRoutes = require('./routes/userRoutes');
@@ -20,6 +21,9 @@ const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
 // 配置机器人命令
 botHandler.setupCommands(bot);
+
+// 静态文件服务 - 为前端文件提供HTTPS访问
+app.use('/src', express.static(path.join(__dirname, '../../frontend/src')));
 
 // Webhook处理（通过Cpolar内网穿透）
 app.post('/webhook', (req, res) => {

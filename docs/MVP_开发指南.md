@@ -36,7 +36,8 @@
 ### 部署
 - **容器化**: Docker Compose
 - **反向代理**: Nginx
-- **HTTPS**: Let's Encrypt
+- **内网穿透**: Cpolar (开发环境)
+- **HTTPS**: Cpolar自动证书 (开发) / Let's Encrypt (生产)
 - **进程管理**: PM2
 
 ## 📂 项目结构
@@ -151,11 +152,65 @@ MVP完成后，应该能够：
 5. ✅ 供应商可以管理商品和订单
 6. ✅ 支付流程完整可用
 
+## 🌐 内网穿透开发指南
+
+### 开发环境配置
+```bash
+# 1. 安装Cpolar
+curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash
+
+# 2. 配置隧道
+cat > ~/.cpolar/cpolar.yml << EOF
+authtoken: YOUR_AUTH_TOKEN
+tunnels:
+  telegram-webhook:
+    proto: http
+    addr: 3000
+    region: cn
+    host_header: rewrite
+  static-web:
+    proto: http
+    addr: 80
+    region: cn
+    host_header: rewrite
+EOF
+
+# 3. 启动服务
+sudo systemctl enable cpolar
+sudo systemctl start cpolar
+```
+
+### 开发流程
+1. **启动隧道**: 确保Cpolar服务运行
+2. **获取URL**: 通过API或管理界面获取隧道地址
+3. **更新配置**: 自动更新.env文件中的URL配置
+4. **设置Webhook**: 将隧道URL设置为Bot的Webhook地址
+5. **测试验证**: 验证Telegram Bot能正常接收消息
+
+### 调试技巧
+```bash
+# 监控隧道状态
+curl -s http://localhost:4040/api/tunnels | jq .
+
+# 测试Webhook连接
+curl -X POST "$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')/webhook" \
+  -H "Content-Type: application/json" -d '{"test": "debug"}'
+
+# 查看实时日志
+tail -f ~/tg-empire/logs/backend.log
+```
+
+### 常见问题
+- **隧道断开**: 检查网络连接，重启Cpolar服务
+- **Webhook失效**: 重新设置Telegram Bot的Webhook地址
+- **SSL证书**: Cpolar自动处理，无需手动配置
+
 ---
 
 ## 📞 开发协作
 
 - **开发环境**: VS Code Remote-SSH
 - **代码同步**: 直接在服务器开发
-- **测试方式**: 实时部署测试
+- **测试方式**: 实时部署测试 + Cpolar隧道
 - **文档更新**: 实时更新项目文档
+- **隧道管理**: 使用自动化脚本维护隧道连接

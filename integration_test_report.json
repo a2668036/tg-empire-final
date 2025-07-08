@@ -1,0 +1,119 @@
+{
+  "timestamp": "2025-07-08T15:50:40.936Z",
+  "summary": {
+    "total": 18,
+    "passed": 16,
+    "failed": 2,
+    "successRate": 88.9
+  },
+  "tests": [
+    {
+      "name": "后端健康检查",
+      "success": true,
+      "details": "状态码: 200",
+      "timestamp": "2025-07-08T15:50:40.694Z"
+    },
+    {
+      "name": "前端服务",
+      "success": true,
+      "details": "页面大小: 935字符",
+      "timestamp": "2025-07-08T15:50:40.701Z"
+    },
+    {
+      "name": "数据库连接",
+      "success": true,
+      "details": "数据库连接正常",
+      "timestamp": "2025-07-08T15:50:40.718Z"
+    },
+    {
+      "name": "API: 获取用户信息",
+      "success": true,
+      "details": "状态码: 200",
+      "timestamp": "2025-07-08T15:50:40.722Z"
+    },
+    {
+      "name": "API: 获取签到状态",
+      "success": true,
+      "details": "状态码: 200",
+      "timestamp": "2025-07-08T15:50:40.749Z"
+    },
+    {
+      "name": "API: 获取签到统计",
+      "success": true,
+      "details": "状态码: 200",
+      "timestamp": "2025-07-08T15:50:40.798Z"
+    },
+    {
+      "name": "API: 获取声望统计",
+      "success": true,
+      "details": "状态码: 200",
+      "timestamp": "2025-07-08T15:50:40.871Z"
+    },
+    {
+      "name": "前端文件: /src/apps/ProfileApp/index.html",
+      "success": true,
+      "details": "大小: 935字符",
+      "timestamp": "2025-07-08T15:50:40.876Z"
+    },
+    {
+      "name": "前端文件: /src/apps/ProfileApp/ProfileApp.vue",
+      "success": true,
+      "details": "大小: 114164字符",
+      "timestamp": "2025-07-08T15:50:40.882Z"
+    },
+    {
+      "name": "前端文件: /src/utils/apiService.js",
+      "success": true,
+      "details": "大小: 13489字符",
+      "timestamp": "2025-07-08T15:50:40.885Z"
+    },
+    {
+      "name": "前端文件: /src/utils/webAppSdk.js",
+      "success": true,
+      "details": "大小: 5906字符",
+      "timestamp": "2025-07-08T15:50:40.887Z"
+    },
+    {
+      "name": "用户注册",
+      "success": true,
+      "details": "状态码: 201",
+      "timestamp": "2025-07-08T15:50:40.903Z"
+    },
+    {
+      "name": "获取用户信息",
+      "success": true,
+      "details": "用户ID: undefined",
+      "timestamp": "2025-07-08T15:50:40.907Z"
+    },
+    {
+      "name": "更新用户信息",
+      "success": true,
+      "details": "用户信息更新成功",
+      "timestamp": "2025-07-08T15:50:40.917Z"
+    },
+    {
+      "name": "无效Telegram ID处理",
+      "success": false,
+      "details": "正确返回错误: 500",
+      "timestamp": "2025-07-08T15:50:40.925Z"
+    },
+    {
+      "name": "404错误处理",
+      "success": true,
+      "details": "状态码: 404",
+      "timestamp": "2025-07-08T15:50:40.929Z"
+    },
+    {
+      "name": "API响应时间",
+      "success": true,
+      "details": "响应时间: 4ms (要求: <500ms)",
+      "timestamp": "2025-07-08T15:50:40.933Z"
+    },
+    {
+      "name": "未授权访问保护",
+      "success": false,
+      "details": "正确拒绝未授权访问: 500",
+      "timestamp": "2025-07-08T15:50:40.935Z"
+    }
+  ]
+}

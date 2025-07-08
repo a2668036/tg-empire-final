@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>帝国社区 - 个人主页</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #000000);
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+      border-radius: 12px;
+    }
+    
+    .user-info {
+      margin-bottom: 20px;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--tg-theme-button-color, #007bff);
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: var(--tg-theme-hint-color, #6c757d);
+      margin-top: 5px;
+    }
+    
+    .action-button {
+      width: 100%;
+      padding: 15px;
+      background: var(--tg-theme-button-color, #007bff);
+      color: var(--tg-theme-button-text-color, white);
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: opacity 0.3s;
+    }
+    
+    .action-button:hover {
+      opacity: 0.9;
+    }
+    
+    .action-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--tg-theme-hint-color, #6c757d);
+    }
+    
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .debug-info {
+      background: #e2e3e5;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading" class="loading">
+      正在加载用户数据...
+    </div>
+    
+    <div id="error" class="error" style="display: none;">
+      <!-- 错误信息将在这里显示 -->
+    </div>
+    
+    <div id="app" style="display: none;">
+      <div class="header">
+        <div class="user-info">
+          <h1 id="userName">用户名</h1>
+          <p id="userHandle">@username</p>
+        </div>
+      </div>
+      
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="reputationPoints">0</div>
+          <div class="stat-label">声望点数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="empireStars">0</div>
+          <div class="stat-label">帝国之星</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="consecutiveCheckIns">0</div>
+          <div class="stat-label">连续签到</div>
+        </div>
+      </div>
+      
+      <button id="checkInButton" class="action-button">
+        每日签到
+      </button>
+      
+      <div id="message" style="display: none;"></div>
+    </div>
+    
+    <div id="debugInfo" class="debug-info">
+      <!-- 调试信息 -->
+    </div>
+  </div>
+
+  <script>
+    // 调试日志函数
+    function debugLog(message) {
+      console.log(message);
+      const debugDiv = document.getElementById('debugInfo');
+      debugDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+      debugDiv.scrollTop = debugDiv.scrollHeight;
+    }
+    
+    // 显示错误
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      debugLog('错误: ' + message);
+    }
+    
+    // 显示成功消息
+    function showMessage(message, type = 'success') {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = message;
+      messageDiv.className = type;
+      messageDiv.style.display = 'block';
+      setTimeout(() => {
+        messageDiv.style.display = 'none';
+      }, 3000);
+    }
+    
+    // 更新用户界面
+    function updateUI(userData) {
+      debugLog('更新UI，用户数据: ' + JSON.stringify(userData));
+
+      // 安全地处理用户名显示
+      const firstName = userData.first_name || '';
+      const lastName = userData.last_name || '';
+      const username = userData.username || '';
+
+      const displayName = `${firstName} ${lastName}`.trim() || 'TG用户';
+      const displayHandle = username ? `@${username}` : (firstName || 'TG用户');
+
+      document.getElementById('userName').textContent = displayName;
+      document.getElementById('userHandle').textContent = displayHandle;
+      document.getElementById('reputationPoints').textContent = userData.reputation_points || 0;
+      document.getElementById('empireStars').textContent = userData.empire_stars || 0;
+      document.getElementById('consecutiveCheckIns').textContent = userData.consecutive_check_ins || 0;
+      
+      // 检查是否已签到
+      const today = new Date();
+      const lastCheckIn = userData.last_check_in_date ? new Date(userData.last_check_in_date) : null;
+      const hasCheckedInToday = lastCheckIn && 
+        lastCheckIn.getDate() === today.getDate() && 
+        lastCheckIn.getMonth() === today.getMonth() && 
+        lastCheckIn.getFullYear() === today.getFullYear();
+      
+      const checkInButton = document.getElementById('checkInButton');
+      if (hasCheckedInToday) {
+        checkInButton.textContent = '今日已签到';
+        checkInButton.disabled = true;
+      } else {
+        checkInButton.textContent = '每日签到';
+        checkInButton.disabled = false;
+      }
+      
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+    }
+    
+    // 获取Telegram用户ID
+    function getTelegramUserId() {
+      try {
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+          return Telegram.WebApp.initDataUnsafe.user.id;
+        }
+        // 开发环境使用真实用户ID
+        return 2033514198;
+      } catch (error) {
+        debugLog('获取Telegram用户ID失败: ' + error.message);
+        return 2033514198;
+      }
+    }
+    
+    // 获取用户数据
+    async function fetchUserData() {
+      try {
+        debugLog('开始获取用户数据...');
+        const telegramId = getTelegramUserId();
+        debugLog('使用Telegram ID: ' + telegramId);
+        
+        const response = await fetch('https://338a537.r3.cpolar.cn/api/v1/users/me', {
+          headers: {
+            'x-telegram-id': telegramId.toString()
+          }
+        });
+        
+        debugLog('API响应状态: ' + response.status);
+        
+        if (response.ok) {
+          const responseData = await response.json();
+          debugLog('用户数据获取成功: ' + JSON.stringify(responseData));
+          // 修复：提取嵌套的用户数据
+          const userData = responseData.data || responseData;
+          updateUI(userData);
+        } else if (response.status === 404) {
+          debugLog('用户不存在，尝试注册...');
+          await registerUser();
+        } else {
+          throw new Error(`API请求失败: ${response.status}`);
+        }
+      } catch (error) {
+        debugLog('获取用户数据失败: ' + error.message);
+        showError('无法加载用户数据: ' + error.message);
+      }
+    }
+    
+    // 注册用户
+    async function registerUser() {
+      try {
+        const telegramId = getTelegramUserId();
+        const userData = {
+          telegram_id: telegramId,
+          username: 'Luxury1994',
+          first_name: '达Younger brother',
+          last_name: '飞'
+        };
+        
+        debugLog('注册用户数据: ' + JSON.stringify(userData));
+        
+        const response = await fetch('https://338a537.r3.cpolar.cn/api/v1/users/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
+        
+        if (response.ok) {
+          const responseData = await response.json();
+          debugLog('用户注册成功: ' + JSON.stringify(responseData));
+          // 修复：提取嵌套的用户数据
+          const newUser = responseData.data || responseData;
+          updateUI(newUser);
+        } else {
+          throw new Error(`注册失败: ${response.status}`);
+        }
+      } catch (error) {
+        debugLog('用户注册失败: ' + error.message);
+        showError('用户注册失败: ' + error.message);
+      }
+    }
+    
+    // 签到功能
+    async function checkIn() {
+      try {
+        debugLog('开始签到...');
+        const telegramId = getTelegramUserId();
+        
+        const response = await fetch('https://338a537.r3.cpolar.cn/api/v1/users/check-in', {
+          method: 'POST',
+          headers: {
+            'x-telegram-id': telegramId.toString()
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          debugLog('签到成功');
+          showMessage('签到成功！获得 ' + result.rewards.totalPoints + ' 点声望');
+          
+          // 更新UI
+          updateUI(result.user);
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error || '签到失败');
+        }
+      } catch (error) {
+        debugLog('签到失败: ' + error.message);
+        showMessage('签到失败: ' + error.message, 'error');
+      }
+    }
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      debugLog('页面加载完成');
+      
+      // 初始化Telegram WebApp
+      if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        debugLog('初始化Telegram WebApp...');
+        Telegram.WebApp.ready();
+        Telegram.WebApp.setHeaderColor('#007bff');
+        debugLog('Telegram WebApp初始化完成');
+      }
+      
+      // 绑定签到按钮事件
+      document.getElementById('checkInButton').addEventListener('click', checkIn);
+      
+      // 获取用户数据
+      fetchUserData();
+    });
+  </script>
+</body>
+</html>

@@ -9,12 +9,15 @@
     <div v-else class="profile-container">
       <div class="profile-header">
         <h1>{{ user.first_name }} {{ user.last_name }}</h1>
-        <div class="username">@{{ user.username }}</div>
+        <div class="username" v-if="user.username">@{{ user.username }}</div>
+        <div class="username" v-else>{{ user.first_name || 'TG用户' }}</div>
       </div>
       
       <div class="stats-container">
         <div class="stat-item">
-          <div class="stat-value">{{ user.reputation_points }}</div>
+          <div class="stat-value" :class="{ 'value-changing': isReputationChanging }">
+            {{ animatedReputationPoints }}
+          </div>
           <div class="stat-label">声望</div>
         </div>
         <div class="stat-item">
@@ -27,8 +30,23 @@
         </div>
       </div>
       
-      <div class="action-button" @click="checkIn" :class="{ disabled: checkedInToday }">
-        {{ checkedInToday ? '今日已签到' : '每日签到' }}
+      <div class="action-button" @click="checkIn" :class="{ disabled: checkedInToday, checking: isCheckingIn }">
+        <span v-if="isCheckingIn" class="checking-text">
+          <span class="spinner"></span>
+          签到中...
+        </span>
+        <span v-else>
+          {{ checkedInToday ? '今日已签到' : '每日签到' }}
+        </span>
+      </div>
+
+      <!-- 签到成功动画 -->
+      <div v-if="showCheckInAnimation" class="check-in-animation">
+        <div class="animation-content">
+          <div class="success-icon">✓</div>
+          <div class="success-text">签到成功！</div>
+          <div class="points-earned">+{{ lastCheckInPoints }} 声望点</div>
+        </div>
       </div>
       
       <!-- 新增的标签导航栏 -->
@@ -217,6 +235,13 @@ export default {
     const loading = ref(true);
     const error = ref(null);
     const checkedInToday = ref(false);
+
+    // 动画相关状态
+    const isCheckingIn = ref(false);
+    const showCheckInAnimation = ref(false);
+    const lastCheckInPoints = ref(0);
+    const isReputationChanging = ref(false);
+    const animatedReputationPoints = ref(0);
     
     // 新增的状态变量
     const activeTab = ref('stats');
@@ -258,43 +283,118 @@ export default {
     const fetchUserData = async () => {
       try {
         loading.value = true;
+        console.log('开始获取用户数据...');
+
+        // 检查Telegram WebApp数据
+        const initData = webAppSdk.getInitData();
+        console.log('Telegram initData:', initData);
+
         const userData = await apiService.getCurrentUser();
+        console.log('获取到用户数据:', userData);
+        console.log('用户数据类型:', typeof userData);
+        console.log('用户数据字段:', Object.keys(userData || {}));
         user.value = userData;
-        
+
+        // 初始化动画数值
+        animatedReputationPoints.value = userData.reputation_points;
+
         // 检查是否已经签到
         if (user.value.last_check_in_date) {
           const lastCheckIn = new Date(user.value.last_check_in_date);
           const today = new Date();
-          checkedInToday.value = 
-            lastCheckIn.getDate() === today.getDate() && 
-            lastCheckIn.getMonth() === today.getMonth() && 
+          checkedInToday.value =
+            lastCheckIn.getDate() === today.getDate() &&
+            lastCheckIn.getMonth() === today.getMonth() &&
             lastCheckIn.getFullYear() === today.getFullYear();
         }
+
+        error.value = null;
       } catch (err) {
-        error.value = '无法加载用户数据，请稍后再试';
         console.error('获取用户数据失败:', err);
+        error.value = '获取用户数据失败: ' + err.message;
+
+        // 如果用户不存在，尝试注册
+        if (err.response && err.response.status === 404) {
+          try {
+            console.log('用户不存在，尝试注册...');
+            const initData = webAppSdk.getInitData();
+            if (initData && initData.user) {
+              const registerData = {
+                telegram_id: initData.user.id,
+                username: initData.user.username || '',
+                first_name: initData.user.first_name || '',
+                last_name: initData.user.last_name || ''
+              };
+              console.log('注册数据:', registerData);
+
+              const response = await fetch('/api/v1/users/register', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(registerData)
+              });
+
+              if (response.ok) {
+                const registerResponse = await response.json();
+                console.log('注册成功:', registerResponse);
+                if (registerResponse.success && registerResponse.data) {
+                  user.value = registerResponse.data;
+                  error.value = null;
+                } else {
+                  throw new Error('注册响应格式错误');
+                }
+              } else {
+                throw new Error('注册请求失败');
+              }
+            }
+          } catch (registerErr) {
+            console.error('注册失败:', registerErr);
+            error.value = '用户注册失败: ' + registerErr.message;
+          }
+        }
       } finally {
         loading.value = false;
       }
     };
     
     const checkIn = async () => {
-      if (checkedInToday.value) return;
-      
+      if (checkedInToday.value || isCheckingIn.value) return;
+
       try {
-        await apiService.checkIn();
+        isCheckingIn.value = true;
+        const oldReputationPoints = user.value.reputation_points;
+
+        const result = await apiService.checkIn();
+
+        // 记录获得的点数
+        lastCheckInPoints.value = result.rewards?.totalPoints || 5;
+
         // 更新用户数据
         await fetchUserData();
-        webAppSdk.showPopup({
-          message: '签到成功！',
-          buttons: [{ type: 'ok' }]
-        });
+
+        // 播放数值变化动画
+        animateReputationChange(oldReputationPoints, user.value.reputation_points);
+
+        // 显示签到成功动画
+        showCheckInSuccessAnimation();
+
       } catch (err) {
-        webAppSdk.showPopup({
-          message: '签到失败，请稍后再试',
-          buttons: [{ type: 'ok' }]
-        });
         console.error('签到失败:', err);
+        if (err.response?.data?.error === '今日已完成签到') {
+          checkedInToday.value = true;
+          webAppSdk.showPopup({
+            message: '今日已完成签到',
+            buttons: [{ type: 'ok' }]
+          });
+        } else {
+          webAppSdk.showPopup({
+            message: '签到失败，请稍后再试',
+            buttons: [{ type: 'ok' }]
+          });
+        }
+      } finally {
+        isCheckingIn.value = false;
       }
     };
     
@@ -379,6 +479,38 @@ export default {
         loadReputationHistory();
       }
     };
+
+    // 动画函数
+    const animateReputationChange = (fromValue, toValue) => {
+      isReputationChanging.value = true;
+      const duration = 1000; // 1秒动画
+      const startTime = Date.now();
+      const difference = toValue - fromValue;
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // 使用缓动函数
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        animatedReputationPoints.value = Math.round(fromValue + difference * easeOutQuart);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          isReputationChanging.value = false;
+        }
+      };
+
+      animate();
+    };
+
+    const showCheckInSuccessAnimation = () => {
+      showCheckInAnimation.value = true;
+      setTimeout(() => {
+        showCheckInAnimation.value = false;
+      }, 2000);
+    };
     
     // 日期格式化函数
     const formatDate = (dateString) => {
@@ -418,7 +550,13 @@ export default {
       switchToCheckInTab,
       switchToReputationTab,
       formatDate,
-      formatDateTime
+      formatDateTime,
+      // 动画相关
+      isCheckingIn,
+      showCheckInAnimation,
+      lastCheckInPoints,
+      isReputationChanging,
+      animatedReputationPoints
     };
   }
 }
@@ -484,6 +622,13 @@ export default {
   font-size: 24px;
   font-weight: bold;
   color: var(--tg-theme-button-color, #2481cc);
+  transition: all 0.3s ease;
+}
+
+.stat-value.value-changing {
+  color: #4caf50;
+  transform: scale(1.1);
+  text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
 }
 
 .stat-label {
@@ -499,7 +644,9 @@ export default {
   border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .action-button:active {
@@ -509,6 +656,107 @@ export default {
 .action-button.disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.action-button.checking {
+  background-color: #ffa726;
+  cursor: not-allowed;
+}
+
+.checking-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 签到成功动画 */
+.check-in-animation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.animation-content {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  animation: bounceIn 0.6s ease-out;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.success-icon {
+  font-size: 60px;
+  color: #4caf50;
+  margin-bottom: 20px;
+  animation: pulse 1s ease-in-out;
+}
+
+.success-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.points-earned {
+  font-size: 18px;
+  color: #4caf50;
+  font-weight: 600;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 /* 新增样式 */

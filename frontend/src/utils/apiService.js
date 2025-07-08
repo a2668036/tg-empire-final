@@ -3,7 +3,7 @@ import { webAppSdk } from './webAppSdk';
 
 // 创建Axios实例
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1',
+  baseURL: '/api/v1', // 使用相对路径，通过Vite代理
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -29,7 +29,7 @@ export const apiService = {
    */
   async getCurrentUser() {
     const response = await api.get('/users/me');
-    return response.data;
+    return response.data.data; // 提取嵌套的用户数据
   },
   
   /**
@@ -39,7 +39,7 @@ export const apiService = {
    */
   async updateUser(userData) {
     const response = await api.put('/users/me', userData);
-    return response.data;
+    return response.data.data; // 提取嵌套的用户数据
   },
   
   /**

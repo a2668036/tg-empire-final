@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>调试版本 - 帝国社区</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #000000);
+      padding: 20px;
+    }
+    
+    .debug-info {
+      background: #f0f0f0;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #007bff;
+    }
+    
+    .error {
+      background: #f8d7da;
+      border-left-color: #dc3545;
+      color: #721c24;
+    }
+    
+    .success {
+      background: #d4edda;
+      border-left-color: #28a745;
+      color: #155724;
+    }
+    
+    .loading {
+      background: #fff3cd;
+      border-left-color: #ffc107;
+      color: #856404;
+    }
+    
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    pre {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔧 TG Empire 调试页面</h1>
+  
+  <div id="status" class="debug-info loading">
+    正在初始化调试环境...
+  </div>
+  
+  <div>
+    <button onclick="testBasicFunctionality()">测试基础功能</button>
+    <button onclick="testTelegramSDK()">测试Telegram SDK</button>
+    <button onclick="testAPIConnection()">测试API连接</button>
+    <button onclick="testVueComponents()">测试Vue组件</button>
+  </div>
+  
+  <div id="results"></div>
+  
+  <div id="vue-app">
+    <!-- Vue应用将在这里挂载 -->
+  </div>
+
+  <script type="module">
+    // 全局错误捕获
+    window.addEventListener('error', (event) => {
+      addResult(`❌ JavaScript错误: ${event.error.message}`, 'error');
+      console.error('JavaScript错误:', event.error);
+    });
+    
+    window.addEventListener('unhandledrejection', (event) => {
+      addResult(`❌ Promise错误: ${event.reason}`, 'error');
+      console.error('Promise错误:', event.reason);
+    });
+    
+    const statusDiv = document.getElementById('status');
+    const resultsDiv = document.getElementById('results');
+    
+    function updateStatus(message, type = 'loading') {
+      statusDiv.className = `debug-info ${type}`;
+      statusDiv.textContent = message;
+    }
+    
+    function addResult(message, type = 'debug-info') {
+      const div = document.createElement('div');
+      div.className = `debug-info ${type}`;
+      div.innerHTML = message;
+      resultsDiv.appendChild(div);
+    }
+    
+    // 测试基础功能
+    window.testBasicFunctionality = function() {
+      addResult('🔍 测试基础功能...');
+      
+      // 测试DOM操作
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.textContent = 'DOM操作测试';
+        addResult('✅ DOM操作正常', 'success');
+      } catch (error) {
+        addResult(`❌ DOM操作失败: ${error.message}`, 'error');
+      }
+      
+      // 测试ES6模块
+      try {
+        const testPromise = new Promise(resolve => resolve('ES6测试'));
+        testPromise.then(() => {
+          addResult('✅ ES6 Promise正常', 'success');
+        });
+      } catch (error) {
+        addResult(`❌ ES6功能失败: ${error.message}`, 'error');
+      }
+      
+      // 测试Fetch API
+      if (typeof fetch !== 'undefined') {
+        addResult('✅ Fetch API可用', 'success');
+      } else {
+        addResult('❌ Fetch API不可用', 'error');
+      }
+    };
+    
+    // 测试Telegram SDK
+    window.testTelegramSDK = function() {
+      addResult('📱 测试Telegram SDK...');
+      
+      try {
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+          addResult('✅ Telegram WebApp SDK已加载', 'success');
+          addResult(`📱 平台: ${Telegram.WebApp.platform}`);
+          addResult(`🎨 版本: ${Telegram.WebApp.version}`);
+          
+          // 初始化WebApp
+          Telegram.WebApp.ready();
+          addResult('✅ WebApp.ready() 调用成功', 'success');
+          
+          // 检查用户数据
+          if (Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+            const user = Telegram.WebApp.initDataUnsafe.user;
+            addResult(`👤 用户: ${user.first_name} ${user.last_name} (@${user.username})`, 'success');
+          } else {
+            addResult('⚠️ 未检测到用户数据（开发环境正常）');
+          }
+          
+          // 设置主题
+          Telegram.WebApp.setHeaderColor('#007bff');
+          addResult('✅ 主题设置成功', 'success');
+          
+        } else {
+          addResult('❌ Telegram WebApp SDK未加载', 'error');
+        }
+      } catch (error) {
+        addResult(`❌ Telegram SDK错误: ${error.message}`, 'error');
+      }
+    };
+    
+    // 测试API连接
+    window.testAPIConnection = async function() {
+      addResult('🌐 测试API连接...');
+      
+      try {
+        // 测试健康检查
+        const healthResponse = await fetch('/health');
+        if (healthResponse.ok) {
+          const data = await healthResponse.json();
+          addResult('✅ API健康检查成功', 'success');
+          addResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+        } else {
+          addResult(`❌ API健康检查失败: ${healthResponse.status}`, 'error');
+        }
+        
+        // 测试用户API（使用测试用户ID）
+        const userResponse = await fetch('/api/v1/users/me', {
+          headers: {
+            'x-telegram-id': '999888777'
+          }
+        });
+        
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          addResult('✅ 用户API调用成功', 'success');
+          addResult(`<pre>${JSON.stringify(userData, null, 2)}</pre>`);
+        } else if (userResponse.status === 404) {
+          addResult('⚠️ 用户不存在（正常，需要注册）');
+        } else {
+          addResult(`❌ 用户API调用失败: ${userResponse.status}`, 'error');
+        }
+        
+      } catch (error) {
+        addResult(`❌ API连接错误: ${error.message}`, 'error');
+      }
+    };
+    
+    // 测试Vue组件
+    window.testVueComponents = async function() {
+      addResult('⚡ 测试Vue组件...');
+      
+      try {
+        // 动态导入Vue（使用CDN）
+        if (!window.Vue) {
+          // 如果Vue未加载，动态加载Vue CDN
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/vue@3/dist/vue.global.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        const { createApp } = Vue;
+        addResult('✅ Vue 3导入成功', 'success');
+        
+        // 创建简单的Vue应用
+        const app = createApp({
+          data() {
+            return {
+              message: 'Vue应用运行正常！',
+              count: 0
+            }
+          },
+          template: `
+            <div style="padding: 20px; background: #e3f2fd; border-radius: 8px; margin: 10px 0;">
+              <h3>{{ message }}</h3>
+              <p>计数器: {{ count }}</p>
+              <button @click="count++" style="background: #2196f3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                点击 +1
+              </button>
+            </div>
+          `
+        });
+        
+        app.mount('#vue-app');
+        addResult('✅ Vue应用挂载成功', 'success');
+        
+      } catch (error) {
+        addResult(`❌ Vue组件测试失败: ${error.message}`, 'error');
+        console.error('Vue错误详情:', error);
+      }
+    };
+    
+    // 页面加载完成后自动运行基础测试
+    document.addEventListener('DOMContentLoaded', () => {
+      updateStatus('调试环境初始化完成', 'success');
+      
+      // 自动运行基础测试
+      setTimeout(() => {
+        testBasicFunctionality();
+        testTelegramSDK();
+      }, 500);
+    });
+  </script>
+</body>
+</html>

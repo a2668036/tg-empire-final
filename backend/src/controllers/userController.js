@@ -1,4 +1,7 @@
 const userService = require('../services/userService');
+const Validator = require('../utils/validator');
+const logger = require('../utils/logger');
+const { asyncHandler, ValidationError, NotFoundError } = require('../middleware/errorHandler');
 
 /**
  * 用户控制器
@@ -11,22 +14,22 @@ const userController = {
    * @param {Object} res - Express响应对象
    * @returns {Promise<void>}
    */
-  async register(req, res) {
-    try {
-      const userData = req.body;
-      
-      // 验证必填字段
-      if (!userData.telegram_id) {
-        return res.status(400).json({ error: '缺少必要的telegram_id字段' });
-      }
-      
-      const user = await userService.registerUser(userData);
-      return res.status(201).json(user);
-    } catch (error) {
-      console.error('注册用户失败:', error);
-      return res.status(500).json({ error: '注册用户时发生错误' });
-    }
-  },
+  register: asyncHandler(async (req, res) => {
+    // 验证输入数据
+    const validatedData = Validator.validateUserRegistration(req.body);
+
+    logger.info('用户注册请求', { telegram_id: validatedData.telegram_id });
+
+    const user = await userService.registerUser(validatedData);
+
+    logger.info('用户注册成功', { user_id: user.id, telegram_id: user.telegram_id });
+
+    res.status(201).json({
+      success: true,
+      data: user,
+      message: '用户注册成功'
+    });
+  }),
   
   /**
    * 获取当前用户信息
@@ -34,26 +37,26 @@ const userController = {
    * @param {Object} res - Express响应对象
    * @returns {Promise<void>}
    */
-  async getMe(req, res) {
-    try {
-      const telegramId = req.headers['x-telegram-id'];
-      
-      if (!telegramId) {
-        return res.status(401).json({ error: '未提供Telegram ID' });
-      }
-      
-      const user = await userService.getUserByTelegramId(parseInt(telegramId, 10));
-      
-      if (!user) {
-        return res.status(404).json({ error: '用户未找到' });
-      }
-      
-      return res.json(user);
-    } catch (error) {
-      console.error('获取用户信息失败:', error);
-      return res.status(500).json({ error: '获取用户信息时发生错误' });
+  getMe: asyncHandler(async (req, res) => {
+    const telegramId = req.headers['x-telegram-id'];
+
+    if (!telegramId || !Validator.isValidTelegramId(telegramId)) {
+      throw new ValidationError('无效的Telegram ID');
     }
-  },
+
+    const user = await userService.getUserByTelegramId(parseInt(telegramId, 10));
+
+    if (!user) {
+      throw new NotFoundError('用户未找到');
+    }
+
+    logger.debug('获取用户信息', { user_id: user.id, telegram_id: user.telegram_id });
+
+    res.json({
+      success: true,
+      data: user
+    });
+  }),
   
   /**
    * 更新用户信息
@@ -61,32 +64,28 @@ const userController = {
    * @param {Object} res - Express响应对象
    * @returns {Promise<void>}
    */
-  async update(req, res) {
-    try {
-      const telegramId = req.headers['x-telegram-id'];
-      const userData = req.body;
-      
-      if (!telegramId) {
-        return res.status(401).json({ error: '未提供Telegram ID' });
-      }
-      
-      // 不允许更新telegram_id
-      if (userData.telegram_id) {
-        delete userData.telegram_id;
-      }
-      
-      const user = await userService.updateUser(parseInt(telegramId, 10), userData);
-      return res.json(user);
-    } catch (error) {
-      console.error('更新用户信息失败:', error);
-      
-      if (error.message === '用户未找到') {
-        return res.status(404).json({ error: '用户未找到' });
-      }
-      
-      return res.status(500).json({ error: '更新用户信息时发生错误' });
+  update: asyncHandler(async (req, res) => {
+    const telegramId = req.headers['x-telegram-id'];
+
+    if (!telegramId || !Validator.isValidTelegramId(telegramId)) {
+      throw new ValidationError('无效的Telegram ID');
     }
-  },
+
+    // 验证更新数据
+    const validatedData = Validator.validateUserUpdate(req.body);
+
+    logger.info('用户更新请求', { telegram_id: telegramId, fields: Object.keys(validatedData) });
+
+    const user = await userService.updateUser(parseInt(telegramId, 10), validatedData);
+
+    logger.info('用户更新成功', { user_id: user.id, telegram_id: user.telegram_id });
+
+    res.json({
+      success: true,
+      data: user,
+      message: '用户信息更新成功'
+    });
+  }),
 
   /**
    * 用户签到

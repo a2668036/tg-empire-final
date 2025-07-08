@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试页面</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .success { background-color: #d4edda; color: #155724; }
+    .error { background-color: #f8d7da; color: #721c24; }
+    .info { background-color: #d1ecf1; color: #0c5460; }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TG Empire 前端测试页面</h1>
+    
+    <div id="status" class="status info">
+      正在初始化...
+    </div>
+    
+    <div>
+      <button onclick="testAPI()">测试API连接</button>
+      <button onclick="testTelegramSDK()">测试Telegram SDK</button>
+      <button onclick="testVueApp()">测试Vue应用</button>
+    </div>
+    
+    <div id="results"></div>
+  </div>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    const statusDiv = document.getElementById('status');
+    const resultsDiv = document.getElementById('results');
+    
+    function updateStatus(message, type = 'info') {
+      statusDiv.className = `status ${type}`;
+      statusDiv.textContent = message;
+    }
+    
+    function addResult(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `status ${type}`;
+      div.textContent = message;
+      resultsDiv.appendChild(div);
+    }
+    
+    async function testAPI() {
+      try {
+        updateStatus('测试API连接...', 'info');
+        const response = await fetch('/api/v1/health');
+        if (response.ok) {
+          const data = await response.json();
+          addResult('✅ API连接成功: ' + JSON.stringify(data), 'success');
+        } else {
+          addResult('❌ API连接失败: ' + response.status, 'error');
+        }
+      } catch (error) {
+        addResult('❌ API连接错误: ' + error.message, 'error');
+      }
+    }
+    
+    function testTelegramSDK() {
+      try {
+        updateStatus('测试Telegram SDK...', 'info');
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+          addResult('✅ Telegram WebApp SDK 已加载', 'success');
+          addResult('📱 平台: ' + Telegram.WebApp.platform, 'info');
+          addResult('🎨 主题: ' + JSON.stringify(Telegram.WebApp.themeParams), 'info');
+          
+          if (Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+            addResult('👤 用户信息: ' + JSON.stringify(Telegram.WebApp.initDataUnsafe.user), 'success');
+          } else {
+            addResult('⚠️ 未检测到Telegram用户信息（开发环境正常）', 'info');
+          }
+        } else {
+          addResult('❌ Telegram WebApp SDK 未加载', 'error');
+        }
+      } catch (error) {
+        addResult('❌ Telegram SDK 错误: ' + error.message, 'error');
+      }
+    }
+    
+    function testVueApp() {
+      updateStatus('测试Vue应用...', 'info');
+      const vueAppUrl = '/src/apps/ProfileApp/index.html';
+      
+      fetch(vueAppUrl)
+        .then(response => {
+          if (response.ok) {
+            addResult('✅ Vue应用页面可访问', 'success');
+            addResult('🔗 Vue应用地址: ' + window.location.origin + vueAppUrl, 'info');
+          } else {
+            addResult('❌ Vue应用页面无法访问: ' + response.status, 'error');
+          }
+        })
+        .catch(error => {
+          addResult('❌ Vue应用访问错误: ' + error.message, 'error');
+        });
+    }
+    
+    // 页面加载完成后自动测试
+    window.addEventListener('load', () => {
+      updateStatus('页面加载完成，可以开始测试', 'success');
+      
+      // 自动测试API
+      setTimeout(testAPI, 1000);
+    });
+  </script>
+</body>
+</html>

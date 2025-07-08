@@ -1,0 +1,56 @@
+{
+  "timestamp": "2025-07-08T13:49:53.258Z",
+  "summary": {
+    "total": 8,
+    "passed": 6,
+    "failed": 2
+  },
+  "checks": [
+    {
+      "name": "后端健康检查",
+      "status": "OK",
+      "data": {
+        "status": "ok",
+        "timestamp": "2025-07-08T13:49:53.210Z"
+      }
+    },
+    {
+      "name": "前端服务",
+      "status": "FAIL",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "name": "Vue应用页面",
+      "status": "OK",
+      "hasVueApp": true,
+      "hasTelegramSDK": true,
+      "hasIndexJS": true,
+      "contentLength": 935
+    },
+    {
+      "name": "API代理",
+      "status": "FAIL",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "name": "Vue入口脚本",
+      "status": "OK",
+      "contentLength": 1699
+    },
+    {
+      "name": "Vue组件文件",
+      "status": "OK",
+      "contentLength": 94611
+    },
+    {
+      "name": "工具模块/src/utils/apiService.js",
+      "status": "OK",
+      "contentLength": 14438
+    },
+    {
+      "name": "工具模块/src/utils/webAppSdk.js",
+      "status": "OK",
+      "contentLength": 5906
+    }
+  ]
+}

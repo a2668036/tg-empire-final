@@ -1,0 +1,183 @@
+{
+  "name": "TG Empire Project",
+  "description": "Telegram社区帝国项目 - 代码文档索引配置",
+  "version": "1.0.0",
+  "indexing": {
+    "include": [
+      "backend/src/**/*.js",
+      "frontend/src/**/*.{js,vue}",
+      "frontend/public/**/*.html",
+      "admin/src/**/*.{js,vue}",
+      "docs/**/*.md",
+      "scripts/**/*.sh",
+      "*.{js,json,yml,yaml,md}",
+      "backend/package.json",
+      "frontend/package.json",
+      "admin/package.json"
+    ],
+    "exclude": [
+      "node_modules/**",
+      ".git/**",
+      "logs/**",
+      "uploads/**",
+      "dist/**",
+      "build/**",
+      "coverage/**",
+      "*.log",
+      "*.pid",
+      ".env*",
+      "*.lock"
+    ],
+    "maxFileSize": "1MB",
+    "maxDepth": 10
+  },
+  "categories": {
+    "backend": {
+      "description": "后端API服务相关代码",
+      "patterns": [
+        "backend/src/**/*.js",
+        "backend/package.json",
+        "backend/tests/**/*.js"
+      ],
+      "keywords": ["express", "api", "database", "telegram", "bot", "webhook"]
+    },
+    "frontend": {
+      "description": "前端Vue应用相关代码",
+      "patterns": [
+        "frontend/src/**/*.{js,vue}",
+        "frontend/public/**/*.html",
+        "frontend/package.json",
+        "frontend/vite.config.js"
+      ],
+      "keywords": ["vue", "vite", "component", "mini-app", "telegram-webapp"]
+    },
+    "admin": {
+      "description": "管理后台相关代码",
+      "patterns": [
+        "admin/src/**/*.{js,vue}",
+        "admin/public/**/*.html",
+        "admin/package.json"
+      ],
+      "keywords": ["admin", "dashboard", "management", "supplier"]
+    },
+    "docs": {
+      "description": "项目文档和指南",
+      "patterns": [
+        "docs/**/*.md",
+        "README.md"
+      ],
+      "keywords": ["documentation", "guide", "manual", "setup", "deployment"]
+    },
+    "config": {
+      "description": "配置文件和脚本",
+      "patterns": [
+        "scripts/**/*.sh",
+        "docker-compose.yml",
+        "*.config.js",
+        "*.json"
+      ],
+      "keywords": ["configuration", "deployment", "docker", "scripts", "cpolar"]
+    }
+  },
+  "topics": {
+    "authentication": {
+      "description": "用户认证和授权",
+      "files": [
+        "backend/src/middleware/auth.js",
+        "backend/src/middleware/adminAuth.js",
+        "backend/src/controllers/userController.js"
+      ]
+    },
+    "telegram-bot": {
+      "description": "Telegram机器人开发",
+      "files": [
+        "backend/src/services/botHandler.js",
+        "backend/src/app.js"
+      ]
+    },
+    "database": {
+      "description": "数据库设计和操作",
+      "files": [
+        "backend/src/models/**/*.js",
+        "backend/src/config/database.js",
+        "scripts/init_database.sql"
+      ]
+    },
+    "deployment": {
+      "description": "部署和运维",
+      "files": [
+        "scripts/**/*.sh",
+        "docker-compose.yml",
+        "docs/安装与配置指南.md"
+      ]
+    },
+    "testing": {
+      "description": "测试相关",
+      "files": [
+        "backend/tests/**/*.js",
+        "backend/run-tests.sh",
+        "backend/tests/README.md"
+      ]
+    },
+    "cpolar": {
+      "description": "内网穿透配置",
+      "files": [
+        "docs/安装与配置指南.md",
+        "docs/项目说明.md",
+        "scripts/update_tunnel_urls.sh",
+        "scripts/monitor_tunnels.sh"
+      ]
+    }
+  },
+  "libraries": {
+    "express": {
+      "description": "Express.js框架",
+      "version": "^5.1.0",
+      "docs": "https://expressjs.com/",
+      "usage": "后端API服务框架"
+    },
+    "telegraf": {
+      "description": "Telegram Bot框架",
+      "version": "^4.16.3",
+      "docs": "https://telegraf.js.org/",
+      "usage": "Telegram机器人开发"
+    },
+    "vue": {
+      "description": "Vue.js框架",
+      "version": "^3.5.17",
+      "docs": "https://vuejs.org/",
+      "usage": "前端组件开发"
+    },
+    "postgresql": {
+      "description": "PostgreSQL数据库",
+      "version": "14",
+      "docs": "https://www.postgresql.org/docs/",
+      "usage": "主数据库"
+    },
+    "redis": {
+      "description": "Redis缓存",
+      "version": "6",
+      "docs": "https://redis.io/docs/",
+      "usage": "缓存和会话存储"
+    }
+  },
+  "queryTemplates": {
+    "api-development": "如何在TG Empire中开发新的API端点？use context7 topic: api-development",
+    "vue-component": "如何创建Vue组件？use context7 topic: frontend vue-component",
+    "telegram-bot": "如何处理Telegram Bot命令？use context7 topic: telegram-bot",
+    "database-design": "如何设计数据库表结构？use context7 topic: database",
+    "deployment": "如何部署TG Empire项目？use context7 topic: deployment",
+    "cpolar-setup": "如何配置Cpolar内网穿透？use context7 topic: cpolar",
+    "testing": "如何编写和运行测试？use context7 topic: testing",
+    "troubleshooting": "如何排查和解决问题？use context7 topic: troubleshooting"
+  },
+  "metadata": {
+    "project": "TG Empire",
+    "language": "zh-CN",
+    "framework": ["Express.js", "Vue.js"],
+    "database": ["PostgreSQL", "Redis"],
+    "deployment": ["Docker", "Cpolar", "Nginx"],
+    "lastUpdated": "2025-07-08",
+    "maintainer": "TG Empire Team"
+  }
+}

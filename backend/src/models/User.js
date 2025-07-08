@@ -145,22 +145,45 @@ class User {
       
       reputationPoints += (basePoints + bonusPoints);
       
+      // 创建签到记录
+      await client.query(
+        `INSERT INTO check_ins
+        (user_id, check_in_date, reputation_earned, is_consecutive, consecutive_days)
+        VALUES ($1, $2, $3, $4, $5)`,
+        [user.id, today, basePoints + bonusPoints, consecutiveCheckIns > 1, consecutiveCheckIns]
+      );
+
+      // 创建声望日志记录
+      await client.query(
+        `INSERT INTO reputation_logs
+        (user_id, points_change, balance, reason, source_type, source_id)
+        VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          user.id,
+          basePoints + bonusPoints,
+          reputationPoints,
+          `每日签到${consecutiveCheckIns > 1 ? ` (连续${consecutiveCheckIns}天)` : ''}`,
+          'check_in',
+          null
+        ]
+      );
+
       // 更新用户信息
       const updateQuery = `
         UPDATE users
-        SET last_check_in_date = $1, 
+        SET last_check_in_date = $1,
             consecutive_check_ins = $2,
             reputation_points = $3,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $4
         RETURNING *
       `;
-      
+
       const updateResult = await client.query(
-        updateQuery, 
+        updateQuery,
         [today, consecutiveCheckIns, reputationPoints, user.id]
       );
-      
+
       // 提交事务
       await client.query('COMMIT');
       

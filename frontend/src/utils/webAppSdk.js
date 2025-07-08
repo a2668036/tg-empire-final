@@ -17,13 +17,35 @@ export const webAppSdk = {
   getInitData() {
     try {
       if (!WebApp.initData) {
-        console.warn('WebApp initData为空');
+        console.warn('WebApp initData为空，使用测试数据');
+        // 在开发环境返回真实用户数据
+        if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
+          return {
+            user: {
+              id: 2033514198,
+              first_name: '达Younger brother',
+              last_name: '飞',
+              username: 'Luxury1994'
+            }
+          };
+        }
         return null;
       }
-      
+
       return WebApp.initDataUnsafe || null;
     } catch (error) {
       console.error('获取initData失败:', error);
+      // 在开发环境返回测试数据
+      if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
+        return {
+          user: {
+            id: 999888777,
+            first_name: 'Test',
+            last_name: 'User',
+            username: 'test_user'
+          }
+        };
+      }
       return null;
     }
   },
