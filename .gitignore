@@ -38,3 +38,18 @@ coverage/
 
 # 上传的文件
 uploads/
+
+# 临时测试文件（避免提交临时测试）
+test_*.js
+*_test_*.js
+debug_*.js
+diagnose_*.js
+*_report.json
+*_diagnosis.json
+*_analysis.md
+cleanup_plan.md
+
+# 开发工具临时文件
+.augment/
+.cursor/
+.context7rc.json
